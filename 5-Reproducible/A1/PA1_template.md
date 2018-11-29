@@ -94,7 +94,7 @@ summary(dailystep$steps)
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##      41    8841   10765   10766   13294   21194
 ```
-###What is the average daily activity pattern?
+### What is the average daily activity pattern?
 1.Make a time series plot of the 5-minute interval and the average number of steps. 
 
 ```r
