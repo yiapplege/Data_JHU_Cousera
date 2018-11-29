@@ -1,6 +1,4 @@
----
-title: "Reproducible Research Assignment"
----
+# Reproducible Research Assignment
 
 ### Set working environment
 
