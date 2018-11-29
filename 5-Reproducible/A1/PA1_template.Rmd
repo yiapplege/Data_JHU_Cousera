@@ -1,5 +1,6 @@
-# Reproducible Research Assignment
-
+---
+title: "Reproducible Research Assignment"
+---
 
 ### Set working environment
 ```{r setup}
@@ -91,18 +92,13 @@ qplot(steps,data = dailystep2,bins=10) +
 summary(dailystep$steps)
 ```
 We can see from the result, filling missing values make it a little bit different from the original statistic. After imputing missing data, the mean keeps the same, but the median change from 10765 to 10766.
+
 ### Are there differences in activity patterns between weekdays and weekends?
 1.Create a new factor variable indicating weekday or weekend day.
-```{r weekday}
-dat2$day <- weekdays(dat2$date)
-for(i in 1:nrow(dat2)){
-      if(dat2$day[i] == "Saturday"|dat2$day[i] == "Sunday"){
-            dat2$daytype[i] = "weekend"
-      }
-      else {
-            dat2$daytype[i]="weekday"
-      }
-} 
+```{r weekday, message=FALSE}
+library(dplyr)
+dat2 <- mutate(dat2,weekday = weekdays(date))
+dat2 <- mutate(dat2,daytype = factor(weekday=="Saturday"|weekday=="Sunday",labels = c("weekday","weekend")))
 ```
 2.Make a panel plot containing a time series plot of average nummber of steps for each 5-min interval for both weekday and weekend day.
 ```{r plot4}

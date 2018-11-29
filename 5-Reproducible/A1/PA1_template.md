@@ -1,6 +1,6 @@
-
-# Reproducible Research Assignment
-
+---
+title: "Reproducible Research Assignment"
+---
 
 ### Set working environment
 
@@ -179,15 +179,9 @@ We can see from the result, filling missing values make it a little bit differen
 1.Create a new factor variable indicating weekday or weekend day.
 
 ```r
-dat2$day <- weekdays(dat2$date)
-for(i in 1:nrow(dat2)){
-      if(dat2$day[i] == "Saturday"|dat2$day[i] == "Sunday"){
-            dat2$daytype[i] = "weekend"
-      }
-      else {
-            dat2$daytype[i]="weekday"
-      }
-} 
+library(dplyr)
+dat2 <- mutate(dat2,weekday = weekdays(date))
+dat2 <- mutate(dat2,daytype = factor(weekday=="Saturday"|weekday=="Sunday",labels = c("weekday","weekend")))
 ```
 2.Make a panel plot containing a time series plot of average nummber of steps for each 5-min interval for both weekday and weekend day.
 
