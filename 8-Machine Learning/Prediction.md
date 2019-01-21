@@ -1,8 +1,3 @@
----
-output:
-  html_document:
-    keep_md: TRUE
----
 # Analysis of Prediction on Exercise Manner
 ### Assignment of Course *Practical Machine Learning*  
 #### *Author: Yige Liu*
