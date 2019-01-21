@@ -1,7 +1,7 @@
 # Analysis of Prediction on Exercise Manner
 ### Assignment of Course *Practical Machine Learning*  
 #### *Author: Yige Liu*
-#### *Date: Jan. 18^th^, 2019*  
+#### *Date: Jan. 18th, 2019*  
 ### Overview
 The goal of this project is to predict the manner in which people did the exercise using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: 
 ```{}
