@@ -1,0 +1,119 @@
+---
+output:
+  html_document:
+    keep_md: TRUE
+---
+# Analysis of Prediction on Exercise Manner
+### Assignment of Course *Practical Machine Learning*  
+#### *Author: Yige Liu*
+#### *Date: Jan. 18^th^, 2019*  
+### Overview
+The goal of this project is to predict the manner in which people did the exercise using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: 
+```{}
+- Class A: exactly according to the specification.  
+- Class B: throwing the elbows to the front.  
+- Class C: lifting the dumbbell only halfway.  
+- Class D: lowering the dumbbell only halfway. 
+- Class E: throwing the hips to the front.  
+```
+
+### Approach
+1. Load the data set and briefly learn the characteristics of the data.  
+2. Clean the data by excluding variables with little information.  
+3. Split the data set into training set (70%) which is used to fit the model and testing set (30%) used to validate the model.  
+4. Apply decision tree method to build a model and test the accuracy.  
+5. Apply random forest method to build a model and test the accuracy.  
+6. Select the model with highest accuracy.  
+7. Apply the model to estimate the 20-observation testing dataset.  
+
+### Preperation
+First of all, set up the coding environment.
+```{r setup, warning=FALSE,error=FALSE,message=FALSE}
+setwd("~/Desktop/Data Science @Coursera/Assignments/8_4")
+library(dplyr); library(caret); set.seed(111)
+```
+Then download the data and read in.
+```{r data}
+if (!file.exists("training.csv")){
+      download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 
+                    "training.csv", method="curl")
+}
+Trainset <- read.csv("training.csv",header = TRUE,na.strings =c("NA","#DIV/0!"))
+
+if (!file.exists("testing.csv")){
+      download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 
+                    "testing.csv", method="curl")
+}
+Testset <- read.csv("testing.csv",header = TRUE,na.strings =c("NA","#DIV/0!"))
+```
+After browsing the data, clean up the data by excluding undesired variables.
+```{r clean}
+Trainset <- Trainset[,-c(1:7)]
+Trainset <- Trainset[,-which(colMeans(is.na(Trainset))>0.8)]
+Testset <- Testset[,-c(1:7)]
+Testset <- Testset[,-which(colMeans(is.na(Testset))>0.8)]
+sum(names(Trainset)!=names(Testset))
+```
+There are total `r dim(Trainset)[1]` observations and `r dim(Trainset)[2]` variables in the training set. Training data and Testing data are identical in variables except the classfication one. 
+
+### Model & Validation
+#### Split Dataset
+Split the data set into training set (70%) which is used to fit the model and testing set (30%) used to validate the model.
+```{r split}
+inTrain <- createDataPartition(y=Trainset$classe,p=0.7,list=FALSE)
+training <- Trainset[inTrain,]
+testing <- Trainset[-inTrain,]
+```
+After processing, the data for model training has `r dim(training)[1]` observations.
+Then simply explore the original training data and subsetting training data to see the distribution of class.  
+```{r hist,echo=FALSE}
+g1 <- ggplot(data=Trainset,aes(x=classe,y = (..count..)/sum(..count..),fill=classe)) +
+      geom_bar() +
+      labs(x="Class",y="Count",title="Histogram of Class \n in Original Training Set") +
+      theme(legend.position = "none") +
+      geom_text(aes(y=(..count..)/sum(..count..),
+                    label=paste0(round(..count.. / sum(..count..) * 100, 0),"%")),
+                stat = "count")
+g2 <- ggplot(data=training,aes(x=classe,fill=classe)) +
+      geom_bar(aes(y = (..count..)/sum(..count..))) +
+      labs(x="Class",y="Count",title="Histogram of Class \n in Training Set") +
+      theme(legend.position = "none")+
+      geom_text(aes(y=(..count..)/sum(..count..),
+                    label=paste0(round(..count.. / sum(..count..) * 100, 0),"%")),
+                stat = "count")
+gridExtra::grid.arrange(g1,g2,ncol=2)
+rm(inTrain); rm(Trainset)
+```
+
+#### Decision Tree Method
+```{r decision tree,warning=FALSE}
+mod2 <- rpart::rpart(classe~.,data=training)
+rpart.plot::rpart.plot(mod2)
+pred2 <- predict(mod2,newdata=testing,type="class")
+cfm2 <- confusionMatrix(pred2,testing$classe); cfm2
+accuracy2 <- round(as.numeric(cfm2$overall[1]),digits=4) 
+ose2 <- 1 - accuracy2 
+```
+The accuracy of this model is `r accuracy2 *100`%. The expected out of sample error is `r ose2*100`%, which is quite high.
+
+#### Random Forest Method
+```{r random forest}
+mod4 <- randomForest::randomForest(classe ~. , data=training, method="class")
+pred4 <- predict(mod4,newdata=testing,type="class")
+cfm4 <- confusionMatrix(pred4,testing$classe); cfm4
+accuracy4 <- round(as.numeric(cfm4$overall[1]),digits=4) 
+ose4 <- 1 - accuracy4
+```
+The accuracy of this model is `r accuracy4 *100`%. The expected out of sample error is `r ose4*100`%.
+
+### Conclusion
+Random Forest algorithm has better accuracy. Thus the Random Forest is selected to predict the testing dataset.
+
+### Prediction
+```{r predict}
+prediction <- predict(mod4,newdata=Testset,type="class")
+prediction
+```
+
+### Reference
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
