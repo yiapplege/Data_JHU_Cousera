@@ -1,0 +1,96 @@
+---
+title: "Developing Data Products"
+subtitle: "Week 3 Assignment"
+author: "Yige"
+date: "*Feb. 3^rd^, 2019*"
+output: ioslides_presentation
+---
+
+```{r setup,include=FALSE,warning=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r data}
+#set the working directory before start
+setwd("~/Desktop/Data Science @Coursera/Assignments/9_3")
+#Download data
+if (!file.exists("november_generator2018.xlsx")){
+      download.file("https://www.eia.gov/electricity/data/eia860m/xls/november_generator2018.xlsx", 
+                    "november_generator2018.xlsx", method="curl")
+}
+#read data
+library(readxl)
+generator <- read_excel("november_generator2018.xlsx", sheet = "Operating", skip = 1)
+#process to get MA power plants
+library(dplyr)
+gen <- generator %>% filter(`Plant State`=="MA") %>%
+      select(c(`Plant ID`,`Plant Name`,`Plant State`,
+               `Nameplate Capacity (MW)`,`Energy Source Code`,
+               `Operating Year`, County,Latitude,Longitude)) %>% 
+      filter(`Longitude`< -70) %>%
+      group_by(`Plant ID`) %>% 
+      mutate(`Capacity (MW)`=sum(`Nameplate Capacity (MW)`)) %>%
+      select(-`Nameplate Capacity (MW)`) %>%
+      distinct(`Plant ID`, .keep_all = TRUE) %>% 
+      mutate(Label = ifelse(`Energy Source Code`=="DFO"|
+                              `Energy Source Code`=="KER"|
+                              `Energy Source Code`=="RFO","Oil",
+                        ifelse(`Energy Source Code`=="NG","Gas",
+                               ifelse(`Energy Source Code`=="SUN","Solor",
+                                      ifelse(`Energy Source Code`=="WND","Wind",
+                                             ifelse(`Energy Source Code`=="WAT","Hydro",
+                                                    ifelse(`Energy Source Code`=="NUC","Nuclear",
+                                                           ifelse(`Energy Source Code`=="MWH","Storage",
+                                                                  "Other"))))))))
+
+rm(generator)
+
+```
+
+## MA Power Plant Map
+```{r map}
+library(leaflet)
+#color for levels(gen$Label)
+getcolor <- c("blue","black","gray","brown","green","yellow","red","purple")
+
+MAP <- leaflet() %>% addTiles() %>%
+      addMarkers(lat = gen$Latitude,lng=gen$Longitude,
+                 popup = paste(gen$`Plant Name`,gen$Label,paste(gen$`Capacity (MW)`,"MW",sep=""),sep=" - "),
+                 clusterOptions = markerClusterOptions())  %>%
+      addCircleMarkers(weight=1,radius = sqrt(gen$`Capacity (MW)`),color = getcolor,
+                       lat = gen$Latitude,lng = gen$Longitude) %>%
+      addLegend(labels = unique(gen$Label),colors = getcolor)
+MAP
+```
+
+## Power Plants by Energy Source
+Solar panels are popular now, but solar power is distributed with small capacity.
+```{r number}
+library(plotly)
+plot_ly(gen,x=~Label,type="histogram",color = ~factor(Label)) %>% 
+      layout(xaxis=list(title="Energy Source"),yaxis=list(title="Number of Plants"))
+
+```
+
+## Power Plants by Energy Source
+Even though solar plants win by numbers, but Natural Gas is the main power source.
+```{r capacity}
+cap <- aggregate(`Capacity (MW)`~ Label,data=gen,sum)
+plot_ly(cap,x=~Label,y=~`Capacity (MW)`,type="bar",color = ~Label) %>% 
+      layout(xaxis=list(title="Energy Source"),yaxis=list(title="Total Capacity (MW)"))
+```
+
+## Power Plants by Operating Year
+From this plot we can see the trend of power plants in MA. 
+```{r year}
+plot_ly(gen,x=~`Operating Year`,y=~`Capacity (MW)`,type="scatter",color=~factor(Label),mode="markers")
+```
+
+## Thank you!
+
+### Reference: 
+EIA,Preliminary Monthly Electric Generator Inventory (Form EIA-860M),November,2018
+
+
