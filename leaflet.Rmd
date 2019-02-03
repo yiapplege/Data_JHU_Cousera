@@ -1,0 +1,52 @@
+# Power Plants in Massachusetts
+### Assignment of Course *Developing Data Products*  
+#### *Author: Yige Liu*
+#### *Date: Feb. 2^nd^, 2019*  
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#set the working directory before start
+setwd("~/Desktop/Data Science @Coursera/Assignments/9_2")
+
+if (!file.exists("november_generator2018.xlsx")){
+      download.file("https://www.eia.gov/electricity/data/eia860m/xls/november_generator2018.xlsx", 
+                    "november_generator2018.xlsx", method="curl")
+}
+
+library(readxl)
+generator <- read_excel("november_generator2018.xlsx", sheet = "Operating", skip = 1)
+
+library(dplyr)
+gen <- generator %>% filter(`Plant State`=="MA") %>%
+      select(c(`Plant ID`,`Plant Name`,`Plant State`,
+               `Nameplate Capacity (MW)`,`Energy Source Code`,
+               County,Latitude,Longitude)) %>% 
+      filter(`Longitude`< -70) %>%
+      group_by(`Plant ID`) %>% 
+      mutate(`Capacity (MW)`=sum(`Nameplate Capacity (MW)`)) %>%
+      select(-`Nameplate Capacity (MW)`) %>%
+      distinct(`Plant ID`, .keep_all = TRUE) %>% 
+      mutate(Label = ifelse(`Energy Source Code`=="DFO"|
+                              `Energy Source Code`=="KER"|
+                              `Energy Source Code`=="RFO","Oil",
+                        ifelse(`Energy Source Code`=="NG","Gas",
+                               ifelse(`Energy Source Code`=="SUN","Solor",
+                                      ifelse(`Energy Source Code`=="WND","Wind",
+                                             ifelse(`Energy Source Code`=="WAT","Hydro",
+                                                    ifelse(`Energy Source Code`=="NUC","Nuclear",
+                                                           ifelse(`Energy Source Code`=="MWH","Storage",
+                                                                  "Other"))))))))
+
+rm(generator)
+library(leaflet)
+#color for levels(gen$Label)
+getcolor <- c("blue","black","gray","brown","green","yellow","red","purple")
+
+MAP <- leaflet() %>% addTiles() %>%
+      addMarkers(lat = gen$Latitude,lng=gen$Longitude,
+                 popup = paste(gen$`Plant Name`,gen$Label,paste(gen$`Capacity (MW)`,"MW",sep=""),sep=" - "),
+                 clusterOptions = markerClusterOptions())  %>%
+      addCircleMarkers(weight=1,radius = sqrt(gen$`Capacity (MW)`),color = getcolor,
+                       lat = gen$Latitude,lng = gen$Longitude) %>%
+      addLegend(labels = unique(gen$Label),colors = getcolor)
+MAP
+```
