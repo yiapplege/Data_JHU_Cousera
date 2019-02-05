@@ -1,0 +1,102 @@
+---
+title: "Power Plants of Your State"
+subtitle: "Developing Data Products Assignment W4"
+author: "*Yige*"
+date: "*Feb. 4^th^, 2019*"
+output: ioslides_presentation
+---
+```{r setup,include=FALSE,warning=FALSE,message=FALSE}
+library(knitr)
+opts_chunk$set(echo = FALSE)
+opts_chunk$set(warning = FALSE)
+opts_chunk$set(message = FALSE)
+opts_chunk$set(comment = "")
+```
+***
+<font color="dark blue"><font size=6>**Overview**</font></font>  
+- You can learn the basic information of power plants in the U.S. from the "Power Plants of Your State" app.  
+- The app is created based on EIA power plants [dataset]((https://www.eia.gov/electricity/data/eia860M/)).  
+- The app is running on [yiapplege.shinyapps.io](https://yiapplege.shinyapps.io/PowerPlants/).  
+- Codes can be found in [yiapplege's github](...).  
+- This pitch takes MA and all energy sources as an example.
+
+ <font color="dark blue"><font size=6>**How to use:**</font></font>  
+1. Choose your state.  
+2. Check all the energy sources that you are interested in.   
+3. Enter the number of plants you want to see.  
+4. Click the "Let's go!" button.  
+5. View the results in 3 tabs: Data, Plot and Map.  
+6. Click the "Download the Data" button if you want to save the dataset.    
+
+## Results - Data 
+```{r summary}
+if (!file.exists("november_generator2018.xlsx")){
+      download.file("https://www.eia.gov/electricity/data/eia860m/xls/november_generator2018.xlsx", 
+                    "november_generator2018.xlsx", method="curl")
+}
+#read data
+library(readxl)
+generator <- read_excel("november_generator2018.xlsx", sheet = "Operating", skip = 1)
+#process to get MA power plants
+library(dplyr)
+gen <- generator %>% filter(`Plant State`=="MA") %>%
+            select(c(`Plant Name`,`Plant State`,`Nameplate Capacity (MW)`,
+                     `Energy Source Code`, `Operating Year`,
+                     County,Latitude,Longitude)) %>% 
+            mutate(`Operating Year`=format(as.numeric(`Operating Year`),digits = 0)) %>%
+            group_by(`Plant Name`) %>% 
+            mutate(`Capacity (MW)`=sum(`Nameplate Capacity (MW)`)) %>%
+            distinct(`Plant ID`, .keep_all = TRUE) %>% 
+            mutate(Label = ifelse(`Energy Source Code`=="DFO"|
+                                        `Energy Source Code`=="KER"|
+                                        `Energy Source Code`=="RFO","Oil",
+                                  ifelse(`Energy Source Code`=="NG","Gas",
+                                         ifelse(`Energy Source Code`=="SUN","Solar",
+                                                ifelse(`Energy Source Code`=="WND","Wind",
+                                                       ifelse(`Energy Source Code`=="WAT","Hydro",
+                                                              ifelse(`Energy Source Code`=="NUC","Nuclear",
+                                                                     ifelse(`Energy Source Code`=="MWH","Storage",
+                                                                            "Other")))))))) %>%
+            select(-c(`Nameplate Capacity (MW)`,`Energy Source Code`))
+rm(generator)
+summary(gen)[,c(1,5,6,7)]
+```
+<font color="blue"><font size=4>This tab shows the summary of chosen plants as above. It also shows the information of your chosen plants. You can enter the number of plants you want to see from sidebar.</font></font>
+```{r}
+head(gen,2)
+```
+
+## Results - Plot
+<font color="blue"><font size=4>This tab shows the total power capacity over years grouped by energy source.</font></font>
+```{r plot}
+library(ggplot2)
+gen2 <- aggregate(`Capacity (MW)`~`Operating Year`+ Label,data=gen,sum)
+ggplot(gen2,aes(x=`Operating Year`,y=`Capacity (MW)`,color=Label,group=Label)) +
+      geom_point()+
+      labs(y="Total Capacity (MW)",x="Operating Year") +
+      geom_smooth(method="lm",se=TRUE) +
+      ylim(0,2500)
+```
+
+## Results - Map
+<font color="blue"><font size=4>This tab shows the location of all chosen power plants by leaflet map.</font></font>
+```{r map}
+library(leaflet)
+getcolor <- c("brown","blue","orange","black","yellow","red","purple","green")
+getsource <- c("Gas","Hydro","Nuclear","Oil","Other","Solar","Storage","Wind")
+gen <- mutate(gen,Color=recode_factor(Label,`Gas`="brown",`Hydro`="blue",`Nuclear`="gray",`Oil`="black",`Other`="yellow",`Solar`="red",`Storage`="purple",`Wind`="green"))
+      
+MAP <- leaflet() %>% addTiles() %>%
+      addMarkers(lat = gen$Latitude,lng=gen$Longitude,
+                 popup = paste(gen$`Plant Name`,paste(gen$`Capacity (MW)`,"MW",sep=""),sep=" - "),
+                 clusterOptions = markerClusterOptions())  %>%
+      addCircleMarkers(weight=1,radius = gen$`Capacity (MW)`/50,color = gen$Color,
+                       lat = gen$Latitude,lng = gen$Longitude) %>%
+      addLegend(labels = getsource,colors = getcolor)
+MAP
+```
+
+
+
+
+
