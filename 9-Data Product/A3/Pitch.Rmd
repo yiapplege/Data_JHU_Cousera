@@ -15,15 +15,15 @@ opts_chunk$set(comment = "")
 ***
 <font color="dark blue"><font size=6>**Overview**</font></font>  
 - You can learn the basic information of power plants in the U.S. from the "Power Plants of Your State" app.  
-- The app is created based on EIA power plants [dataset]((https://www.eia.gov/electricity/data/eia860M/)).  
+- The app is created based on EIA power plants [dataset](https://www.eia.gov/electricity/data/eia860M/).  
 - The app is running on [yiapplege.shinyapps.io](https://yiapplege.shinyapps.io/PowerPlants/).  
-- Codes can be found in [yiapplege's github](...).  
+- Codes can be found in [yiapplege's github](https://yiapplege.github.io/Data_JHU_Cousera/9-Data%20Product/A3/Pitch.html#1).  
 - This pitch takes MA and all energy sources as an example.
 
  <font color="dark blue"><font size=6>**How to use:**</font></font>  
 1. Choose your state.  
 2. Check all the energy sources that you are interested in.   
-3. Enter the number of plants you want to see.  
+3. Enter the number of plant example you want to see.  
 4. Click the "Let's go!" button.  
 5. View the results in 3 tabs: Data, Plot and Map.  
 6. Click the "Download the Data" button if you want to save the dataset.    
